@@ -34,6 +34,5 @@ public class ClusterController {
         Response response = client.getLowLevelClient().performRequest(GET.name(), "/_cluster/health");
         HttpEntity entity = response.getEntity();
         return objectMapper.readValue(entity.getContent(), ClusterHealth.class);
-
     }
 }

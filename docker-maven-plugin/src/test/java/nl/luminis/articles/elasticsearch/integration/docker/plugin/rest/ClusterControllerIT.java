@@ -11,7 +11,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import com.google.gson.Gson;
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.GsonBuilder;
 
 import nl.luminis.articles.elasticsearch.integration.docker.plugin.IntegrationTest;
 import nl.luminis.articles.elasticsearch.integration.dto.ClusterHealth;
@@ -29,8 +30,10 @@ public class ClusterControllerIT extends IntegrationTest {
         MvcResult result = mockMvc.perform(get("/api/cluster/health").accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
 
         String content = result.getResponse().getContentAsString();
-        ClusterHealth health = new Gson().fromJson(content, ClusterHealth.class);
+        ClusterHealth health = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                                                .create()
+                                                .fromJson(content, ClusterHealth.class);
 
-        assertThat(health.getStatus()).isEqualTo("green");
+        assertThat(health.getClusterName()).isEqualTo("integration-test-cluster");
     }
 }

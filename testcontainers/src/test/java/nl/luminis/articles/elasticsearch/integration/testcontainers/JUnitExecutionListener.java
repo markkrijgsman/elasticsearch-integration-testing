@@ -28,9 +28,9 @@ public class JUnitExecutionListener extends RunListener {
             int mappedPort = createContainer();
             System.setProperty(ELASTICSEARCH_HOST_PROPERTY, "localhost:" + mappedPort);
             String host = System.getProperty(ELASTICSEARCH_HOST_PROPERTY);
-            RestAssured.port = Integer.parseInt(host.split(":")[1]);
             RestAssured.basePath = "";
             RestAssured.baseURI = "http://" + host.split(":")[0];
+            RestAssured.port = Integer.parseInt(host.split(":")[1]);
             LOGGER.debug("Created Elasticsearch container at {}", host);
         }
     }
@@ -48,6 +48,7 @@ public class JUnitExecutionListener extends RunListener {
         container = new ElasticsearchContainer();
         container.withBaseUrl(ELASTICSEARCH_IMAGE);
         container.withVersion(ELASTICSEARCH_VERSION);
+        container.withEnv("cluster.name", "integration-test-cluster");
         container.start();
         return container.getMappedPort(ELASTICSEARCH_PORT);
     }
