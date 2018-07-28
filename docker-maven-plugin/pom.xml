@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>elasticsearch-integration-testing</artifactId>
+        <groupId>nl.luminis.articles</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>docker-maven-plugin</artifactId>
+
+    <properties>
+        <version.io.fabric8.docker-maven-plugin>0.24.0</version.io.fabric8.docker-maven-plugin>
+    </properties>
+
+   <dependencies>
+       <dependency>
+           <groupId>nl.luminis.articles</groupId>
+           <artifactId>shared</artifactId>
+           <version>${project.version}</version>
+       </dependency>
+
+       <!-- Test dependencies -->
+       <dependency>
+           <groupId>nl.luminis.articles</groupId>
+           <artifactId>shared</artifactId>
+           <version>${project.version}</version>
+           <type>test-jar</type>
+           <scope>test</scope>
+       </dependency>
+   </dependencies>
+
+    <profiles>
+        <profile>
+            <id>integration-test</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>${version.io.fabric8.docker-maven-plugin}</version>
+                        <configuration>
+                            <imagePullPolicy>always</imagePullPolicy>
+                            <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
+                            <images>
+                                <image>
+                                    <alias>docker-elasticsearch-integration-test</alias>
+                                    <name>markkrijgsman/elasticsearch-analysis-plugins:latest</name>
+                                    <run>
+                                        <namingStrategy>alias</namingStrategy>
+                                        <ports>
+                                            <port>9299:9200</port>
+                                            <port>9399:9300</port>
+                                        </ports>
+                                        <env>
+                                            <cluster.name>integration-test-cluster</cluster.name>
+                                            <ES_JAVA_OPTS>-Xms1024m -Xmx1024m</ES_JAVA_OPTS>
+                                            <network.host>0.0.0.0</network.host>
+                                            <xpack.monitoring.enabled>false</xpack.monitoring.enabled>
+                                            <xpack.security.enabled>false</xpack.security.enabled>
+                                        </env>
+                                        <wait>
+                                            <http>
+                                                <url>http://0.0.0.0:9299</url>
+                                                <method>GET</method>
+                                                <status>200</status>
+                                            </http>
+                                            <time>60000</time>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docker:start</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>docker:stop</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>stop</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

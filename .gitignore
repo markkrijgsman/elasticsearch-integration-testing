@@ -1,0 +1,4 @@
+docker-maven-plugin/target/
+elasticsearch-maven-plugin/target/
+shared/target/
+testcontainers/target/
