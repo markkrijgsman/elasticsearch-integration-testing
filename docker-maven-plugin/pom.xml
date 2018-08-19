@@ -43,11 +43,10 @@
                         <version>${version.io.fabric8.docker-maven-plugin}</version>
                         <configuration>
                             <imagePullPolicy>always</imagePullPolicy>
-                            <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
                             <images>
                                 <image>
                                     <alias>docker-elasticsearch-integration-test</alias>
-                                    <name>markkrijgsman/elasticsearch-analysis-plugins:latest</name>
+                                    <name>docker.elastic.co/elasticsearch/elasticsearch:6.3.0</name>
                                     <run>
                                         <namingStrategy>alias</namingStrategy>
                                         <ports>
@@ -56,14 +55,10 @@
                                         </ports>
                                         <env>
                                             <cluster.name>integration-test-cluster</cluster.name>
-                                            <ES_JAVA_OPTS>-Xms1024m -Xmx1024m</ES_JAVA_OPTS>
-                                            <network.host>0.0.0.0</network.host>
-                                            <xpack.monitoring.enabled>false</xpack.monitoring.enabled>
-                                            <xpack.security.enabled>false</xpack.security.enabled>
                                         </env>
                                         <wait>
                                             <http>
-                                                <url>http://0.0.0.0:9299</url>
+                                                <url>http://localhost:9299</url>
                                                 <method>GET</method>
                                                 <status>200</status>
                                             </http>
