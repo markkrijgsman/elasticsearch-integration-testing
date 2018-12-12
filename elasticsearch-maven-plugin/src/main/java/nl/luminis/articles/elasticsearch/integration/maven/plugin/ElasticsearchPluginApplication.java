@@ -7,7 +7,6 @@ import org.springframework.context.annotation.PropertySource;
 
 @SpringBootApplication
 @ComponentScan("nl.luminis.articles.elasticsearch.integration")
-@PropertySource(value = "classpath:default.properties")
 public class ElasticsearchPluginApplication {
 
     public static void main(String[] args) {

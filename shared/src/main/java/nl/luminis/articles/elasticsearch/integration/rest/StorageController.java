@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -41,6 +42,6 @@ public class StorageController {
 
         BulkRequest request = new BulkRequest();
         request.add(new IndexRequest(INDEX_NAME, INDEX_TYPE, document.getId()).source(jsonMap));
-        client.bulk(request);
+        client.bulk(request, RequestOptions.DEFAULT);
     }
 }

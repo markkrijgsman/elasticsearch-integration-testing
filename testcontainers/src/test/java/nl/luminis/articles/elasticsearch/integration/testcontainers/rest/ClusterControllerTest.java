@@ -1,16 +1,17 @@
 package nl.luminis.articles.elasticsearch.integration.testcontainers.rest;
 
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.InputStream;
-
-import org.apache.http.HttpEntity;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.client.ClusterClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,9 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import nl.luminis.articles.elasticsearch.integration.dto.ClusterHealth;
 import nl.luminis.articles.elasticsearch.integration.rest.ClusterController;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -30,24 +28,18 @@ public class ClusterControllerTest {
     private ClusterController clusterController;
     @Mock
     private RestHighLevelClient client;
-    @Mock
-    private ObjectMapper mapper;
 
     @Test
     public void testClusterHealth() throws Exception {
-        RestClient lowLevelClient = mock(RestClient.class);
-        Response response = mock(Response.class);
-        HttpEntity entity = mock(HttpEntity.class);
-        InputStream stream = mock(InputStream.class);
+        ClusterClient clusterClient = mock(ClusterClient.class);
+        ClusterHealthResponse expectedResponse = mock(ClusterHealthResponse.class);
 
-        when(client.getLowLevelClient()).thenReturn(lowLevelClient);
-        when(lowLevelClient.performRequest(anyString(), anyString())).thenReturn(response);
-        when(response.getEntity()).thenReturn(entity);
-        when(entity.getContent()).thenReturn(stream);
+        when(client.cluster()).thenReturn(clusterClient);
+        when(clusterClient.health(any(ClusterHealthRequest.class), eq(RequestOptions.DEFAULT))).thenReturn(expectedResponse);
 
-        clusterController.health();
+        ClusterHealthResponse actualResponse = clusterController.health();
 
-        verify(lowLevelClient, times(1)).performRequest(anyString(), anyString());
-        verify(mapper, times(1)).readValue(stream, ClusterHealth.class);
+        verify(clusterClient, times(1)).health(any(ClusterHealthRequest.class), eq(RequestOptions.DEFAULT));
+        assertThat(actualResponse).isEqualTo(expectedResponse);
     }
 }

@@ -2,7 +2,7 @@ In my latest project I have implemented all communication with my Elasticsearch 
 
 ### [docker-maven-plugin][2]
 
-This generic Docker plugin allows you to bind the starting and stopping of Docker containers to [Maven lifecycles][3]. You specify two blocks within the plugin; `configuration` and `executions`. In the `configuration` block, you choose the image that you want to run (Elasticsearch 6.3.0 in this case), the ports that you want to expose, a health check and any environment variables. See the snippet below for a complete example:
+This generic Docker plugin allows you to bind the starting and stopping of Docker containers to [Maven lifecycles][3]. You specify two blocks within the plugin; `configuration` and `executions`. In the `configuration` block, you choose the image that you want to run (Elasticsearch 6.5.3 in this case), the ports that you want to expose, a health check and any environment variables. See the snippet below for a complete example:
 
     <plugin>
         <groupId>io.fabric8</groupId>
@@ -13,7 +13,7 @@ This generic Docker plugin allows you to bind the starting and stopping of Docke
             <images>
                 <image>
                     <alias>docker-elasticsearch-integration-test</alias>
-                    <name>docker.elastic.co/elasticsearch/elasticsearch:6.3.0</name>
+                    <name>docker.elastic.co/elasticsearch/elasticsearch:6.5.3</name>
                     <run>
                         <namingStrategy>alias</namingStrategy>
                         <ports>
@@ -84,7 +84,7 @@ This second plugin does not require Docker and only needs some Maven configurati
         <artifactId>elasticsearch-maven-plugin</artifactId>
         <version>${version.com.github.alexcojocaru.elasticsearch-maven-plugin}</version>
         <configuration>
-            <version>${version.org.elastic}</version>
+            <version>6.5.3</version>
             <clusterName>integration-test-cluster</clusterName>
             <transportPort>9399</transportPort>
             <httpPort>9299</httpPort>
@@ -110,11 +110,11 @@ This second plugin does not require Docker and only needs some Maven configurati
 
 Again, I've bound the plugin to the pre- and post-integration-test lifecycle phases in combination with the maven-failsafe-plugin.
 
-This plugin provides a way of starting the Elasticsearch instance from IntelliJ in much the same way as the docker-maven-plugin. You can run the `elasticsearch:runforked` commando from the "Maven projects" view. However in my case, this started the container and then immediately exited. There is also no out of the box possibility of setting a random port for your instance. Of course, [there are solutions to this][8] at the expense of having a somewhat more complex Maven configuration.
+This plugin provides a way of starting the Elasticsearch instance from IntelliJ in much the same way as the docker-maven-plugin. You can run the `elasticsearch:runforked` commando from the "Maven projects" view. However in my case, this started the container and then immediately exited. There is also no out of the box possibility of setting a random port for your instance. However, [there are solutions to this][8] at the expense of having a somewhat more complex Maven configuration.
 
 Overall, this is a plugin that seems to provide almost everything we need with a lot of configuration options. You can automatically [install Elasticsearch plugins][9] or even [bootstrap your instance with data][10].
 
-In practice I did have some problems using the plugin in my build pipeline. Upon downloading the Elasticsearch zip the build would sometimes fail, or in other cases when attempting to download a plugin. Your mileage may vary, but this was reason for me to keep looking for another solution. Which brings me to plugin number three.
+In practice I did have some problems using the plugin in my build pipeline. Upon downloading the Elasticsearch ZIP the build would sometimes fail, or in other cases when attempting to download a plugin. Your mileage may vary, but this was reason for me to keep looking for another solution. Which brings me to plugin number three.
 
 **Pros:**
 
@@ -136,27 +136,34 @@ In order to realize this, I have extended the standard `SpringJUnit4ClassRunner`
 
     public class JUnitExecutionListener extends RunListener {
     
-        private static final Logger LOGGER = LoggerFactory.getLogger(JUnitExecutionListener.class);
         private static final String ELASTICSEARCH_IMAGE = "docker.elastic.co/elasticsearch/elasticsearch";
-        private static final String ELASTICSEARCH_VERSION = "6.3.0";
-        private static final String ELASTICSEARCH_HOST_PROPERTY = "nl.luminis.articles.maven.elasticsearch.host";
+        private static final String ELASTICSEARCH_VERSION = "6.5.3";
+        private static final String ELASTICSEARCH_HOST_PROPERTY = "spring.elasticsearch.rest.uris";
         private static final int ELASTICSEARCH_PORT = 9200;
     
         private ElasticsearchContainer container;
+        private RunNotifier notifier;
+    
+        public JUnitExecutionListener(RunNotifier notifier) {
+            this.notifier = notifier;
+        }
     
         @Override
         public void testRunStarted(Description description) {
-            // Create a Docker Elasticsearch container when there is no existing host defined in default-test.properties.
-            // Spring will use this property to configure the application when it starts.
-            if (System.getProperty(ELASTICSEARCH_HOST_PROPERTY) == null) {
-                LOGGER.debug("Create Elasticsearch container");
-                int mappedPort = createContainer();
-                System.setProperty(ELASTICSEARCH_HOST_PROPERTY, "localhost:" + mappedPort);
-                String host = System.getProperty(ELASTICSEARCH_HOST_PROPERTY);
-                RestAssured.basePath = "";
-                RestAssured.baseURI = "http://" + host.split(":")[0];
-                RestAssured.port = Integer.parseInt(host.split(":")[1]);
-                LOGGER.debug("Created Elasticsearch container at {}", host);
+            try {
+                if (System.getProperty(ELASTICSEARCH_HOST_PROPERTY) == null) {
+                    log.debug("Create Elasticsearch container");
+                    int mappedPort = createContainer();
+                    System.setProperty(ELASTICSEARCH_HOST_PROPERTY, "localhost:" + mappedPort);
+                    String host = System.getProperty(ELASTICSEARCH_HOST_PROPERTY);
+                    RestAssured.basePath = "";
+                    RestAssured.baseURI = "http://" + host.split(":")[0];
+                    RestAssured.port = Integer.parseInt(host.split(":")[1]);
+                    log.debug("Created Elasticsearch container at {}", host);
+                }
+            } catch (Exception e) {
+                notifier.pleaseStop();
+                throw e;
             }
         }
     
@@ -164,7 +171,7 @@ In order to realize this, I have extended the standard `SpringJUnit4ClassRunner`
         public void testRunFinished(Result result) {
             if (container != null) {
                 String host = System.getProperty(ELASTICSEARCH_HOST_PROPERTY);
-                LOGGER.debug("Removing Elasticsearch container at {}", host);
+                log.debug("Removing Elasticsearch container at {}", host);
                 container.stop();
             }
         }
@@ -178,7 +185,6 @@ In order to realize this, I have extended the standard `SpringJUnit4ClassRunner`
             return container.getMappedPort(ELASTICSEARCH_PORT);
         }
     }
-    
 
 It will create an Elasticsearch Docker container on a random port for use by the integration tests. The best thing about having this runner is that it works perfectly fine in IntelliJ. Simply right-click and run your `*IT.java` classes annotated with `@RunWith(ElasticsearchSpringRunner.class)` and IntelliJ will use the listener to setup the Elasticsearch container. This allows you to automate your build pipeline while still keeping developers happy.
 
@@ -194,12 +200,12 @@ It will create an Elasticsearch Docker container on a random port for use by the
 
 In summary, all three of the above plugins are able to realize the goal of starting an Elasticsearch instance for your integration testing. For me personally, I will be using the testcontainers-elasticsearch plugin going forward. The extra Docker dependency is not a problem since I use Docker in most of my build pipelines anyway. Furthermore, the integration with Java allows me to configure things in such a way that it works perfectly fine from both the command line and the IDE.
 
-Feel free to [checkout the code behind this article][1], play around with the integration tests that I've setup there and decide for yourself which plugin suits your needs best. Please note that the project has a special Maven profile that separates unittests from integration tests. Build the project using `mvn clean install -P integration-test` to run both.
+Feel free to [checkout the code behind this article][1], play around with the integration tests that I've setup there and decide for yourself which plugin suits your needs best.
 
- [1]: https://gitlab.com/mrkrijgsman/elasticsearch-integration-testing
+ [1]: https://github.com/markkrijgsman/elasticsearch-integration-testing
  [2]: https://github.com/fabric8io/docker-maven-plugin
  [3]: https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html
- [4]: http://maven.apache.org/surefire/maven-failsafe-plugin/integration-test-mojo.html#includes
+ [4]: https://maven.apache.org/surefire/maven-failsafe-plugin/integration-test-mojo.html#includes
  [5]: https://hub.docker.com/r/markkrijgsman/elasticsearch-analysis-plugins/~/dockerfile/
  [6]: https://amsterdam.luminis.eu/wp-content/uploads/2018/08/intellij-maven-projects-view.png
  [7]: https://github.com/alexcojocaru/elasticsearch-maven-plugin

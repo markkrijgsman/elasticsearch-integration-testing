@@ -12,7 +12,7 @@ public class ElasticsearchSpringRunner extends SpringJUnit4ClassRunner {
 
     @Override
     public void run(RunNotifier notifier) {
-        notifier.addListener(new JUnitExecutionListener());
+        notifier.addListener(new JUnitExecutionListener(notifier));
         notifier.fireTestRunStarted(getDescription());
         super.run(notifier);
     }

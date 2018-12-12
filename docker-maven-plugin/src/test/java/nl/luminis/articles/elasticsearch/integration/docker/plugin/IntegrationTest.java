@@ -10,10 +10,10 @@ import io.restassured.RestAssured;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = DockerPluginApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource({ "classpath:default-test.properties" })
+@TestPropertySource({ "classpath:application-test.properties" })
 public abstract class IntegrationTest {
 
-    @Value("${nl.luminis.articles.maven.elasticsearch.host:#{\"localhost:9200\"}}")
+    @Value("${spring.elasticsearch.rest.uris:#{\"localhost:9200\"}}")
     public void setHost(String host) {
         RestAssured.basePath = "";
         RestAssured.baseURI = "http://" + host.split(":")[0];
