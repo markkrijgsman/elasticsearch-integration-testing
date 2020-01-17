@@ -5,17 +5,15 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
 
-import fr.pilato.elasticsearch.containers.ElasticsearchContainer;
 import io.restassured.RestAssured;
 import lombok.extern.slf4j.Slf4j;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @Slf4j
 public class JUnitExecutionListener extends RunListener {
 
-    private static final String ELASTICSEARCH_IMAGE = "docker.elastic.co/elasticsearch/elasticsearch";
-    private static final String ELASTICSEARCH_VERSION = "6.5.3";
+    private static final String ELASTICSEARCH_IMAGE = "docker.elastic.co/elasticsearch/elasticsearch:6.5.3";
     private static final String ELASTICSEARCH_HOST_PROPERTY = "spring.elasticsearch.rest.uris";
-    private static final int ELASTICSEARCH_PORT = 9200;
 
     private ElasticsearchContainer container;
     private RunNotifier notifier;
@@ -29,8 +27,9 @@ public class JUnitExecutionListener extends RunListener {
         try {
             if (System.getProperty(ELASTICSEARCH_HOST_PROPERTY) == null) {
                 log.debug("Create Elasticsearch container");
-                int mappedPort = createContainer();
-                System.setProperty(ELASTICSEARCH_HOST_PROPERTY, "localhost:" + mappedPort);
+                createContainer();
+                container = createContainer();
+                System.setProperty(ELASTICSEARCH_HOST_PROPERTY, container.getHttpHostAddress());
                 String host = System.getProperty(ELASTICSEARCH_HOST_PROPERTY);
                 RestAssured.basePath = "";
                 RestAssured.baseURI = "http://" + host.split(":")[0];
@@ -52,12 +51,10 @@ public class JUnitExecutionListener extends RunListener {
         }
     }
 
-    private int createContainer() {
-        container = new ElasticsearchContainer();
-        container.withBaseUrl(ELASTICSEARCH_IMAGE);
-        container.withVersion(ELASTICSEARCH_VERSION);
+    private ElasticsearchContainer createContainer() {
+        ElasticsearchContainer container = new ElasticsearchContainer(ELASTICSEARCH_IMAGE);
         container.withEnv("cluster.name", "integration-test-cluster");
         container.start();
-        return container.getMappedPort(ELASTICSEARCH_PORT);
+        return container;
     }
 }

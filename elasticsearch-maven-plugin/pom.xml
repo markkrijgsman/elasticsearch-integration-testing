@@ -12,7 +12,7 @@
     <artifactId>elasticsearch-maven-plugin</artifactId>
 
     <properties>
-        <version.com.github.alexcojocaru.elasticsearch-maven-plugin>6.9</version.com.github.alexcojocaru.elasticsearch-maven-plugin>
+        <version.com.github.alexcojocaru.elasticsearch-maven-plugin>6.16</version.com.github.alexcojocaru.elasticsearch-maven-plugin>
     </properties>
 
     <dependencies>

@@ -12,7 +12,7 @@
     <artifactId>testcontainers</artifactId>
 
     <properties>
-        <version.fr.pilato.elasticsearch.testcontainers.testcontainers-elasticsearch>0.1</version.fr.pilato.elasticsearch.testcontainers.testcontainers-elasticsearch>
+        <version.org.testcontainers.elasticsearch>1.12.4</version.org.testcontainers.elasticsearch>
     </properties>
 
     <dependencies>
@@ -32,9 +32,9 @@
         </dependency>
 
         <dependency>
-            <groupId>fr.pilato.elasticsearch.testcontainers</groupId>
-            <artifactId>testcontainers-elasticsearch</artifactId>
-            <version>${version.fr.pilato.elasticsearch.testcontainers.testcontainers-elasticsearch}</version>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>${version.org.testcontainers.elasticsearch}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

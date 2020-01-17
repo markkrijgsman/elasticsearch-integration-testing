@@ -7,13 +7,13 @@ This generic Docker plugin allows you to bind the starting and stopping of Docke
     <plugin>
         <groupId>io.fabric8</groupId>
         <artifactId>docker-maven-plugin</artifactId>
-        <version>${version.io.fabric8.docker-maven-plugin}</version>
+        <version>0.32</version>
         <configuration>
             <imagePullPolicy>always</imagePullPolicy>
             <images>
                 <image>
                     <alias>docker-elasticsearch-integration-test</alias>
-                    <name>docker.elastic.co/elasticsearch/elasticsearch:6.5.3</name>
+                    <name>elasticsearch/elasticsearch:6.5.3</name>
                     <run>
                         <namingStrategy>alias</namingStrategy>
                         <ports>
@@ -58,9 +58,9 @@ You can see that I've bound the plugin to the pre- and post-integration-test lif
 
 Since this is a generic Docker plugin, there is no special functionality to easily install Elasticsearch plugins that may be needed during your integration tests. You could however [create your own image with the required plugins][5] and pull that image during your integration tests.
 
-The integration with IntelliJ is also not optimal. When running an `*IT.java` class, IntelliJ will not trigger the correct lifecycle phases and will attempt to run your integration test without creating the required Docker container. Before running an integration test from IntelliJ, you need to manually start the container from the "Maven projects" view by running the `docker:start` commando:
+The integration with IntelliJ is also not optimal. When running an `*IT.java` class, IntelliJ will not trigger the correct lifecycle phases and will attempt to run your integration test without creating the required Docker container. Before running an integration test from IntelliJ, you need to manually start the container from the "Maven projects" view by running the `docker:run` commando:
 
-[<img src="https://amsterdam.luminis.eu/wp-content/uploads/2018/08/intellij-maven-projects-view-700x573.png" alt="Maven Projects view in IntelliJ" class="alignnone size-large wp-image-2831" />][6]
+![intellij-maven-project-view.png](docker-maven-plugin/intellij-maven-project-view.png)
 
 After running, you will also need to run the `docker:stop` commando to kill the container that is still running. If you forget to kill the running container and want to run a `mvn clean install` later on it will fail, since the build will attempt to create a container on the same port - as far as I know, the plugin does not allow for random ports to be chosen.
 
@@ -82,7 +82,7 @@ This second plugin does not require Docker and only needs some Maven configurati
     <plugin>
         <groupId>com.github.alexcojocaru</groupId>
         <artifactId>elasticsearch-maven-plugin</artifactId>
-        <version>${version.com.github.alexcojocaru.elasticsearch-maven-plugin}</version>
+        <version>6.16</version>
         <configuration>
             <version>6.5.3</version>
             <clusterName>integration-test-cluster</clusterName>
@@ -133,6 +133,19 @@ In practice I did have some problems using the plugin in my build pipeline. Upon
 This third plugin is different from the other two. It uses a [Java testcontainer][12] that you can configure through Java code. This gives you a lot of flexibility and requires no Maven configuration. Since there is no Maven configuration, it does require some work to make sure the Elasticsearch container is started and stopped at the correct moments.
 
 In order to realize this, I have extended the standard `SpringJUnit4ClassRunner` class with my own `ElasticsearchSpringRunner`. In this runner, I have added a new JUnit RunListener named `JUnitExecutionListener`. This listener defines two methods `testRunStarted` and `testRunFinished` that enable me to start and stop the Elasticsearch container at the same points in time that the pre- and post-integration-test Maven lifecycle phases would. See the snippet below for the implementation of the listener:
+
+    package nl.luminis.articles.elasticsearch.integration.testcontainers;
+    
+    import org.junit.runner.Description;
+    import org.junit.runner.Result;
+    import org.junit.runner.notification.RunListener;
+    import org.junit.runner.notification.RunNotifier;
+    
+    import io.restassured.RestAssured;
+    import lombok.extern.slf4j.Slf4j;
+    import org.testcontainers.elasticsearch.ElasticsearchContainer;
+    
+    @Slf4j
 
     public class JUnitExecutionListener extends RunListener {
     
