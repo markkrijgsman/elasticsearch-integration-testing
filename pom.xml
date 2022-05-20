@@ -22,7 +22,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <version.com.google.code.gson>2.8.5</version.com.google.code.gson>
+        <version.com.google.code.gson>2.8.9</version.com.google.code.gson>
         <version.io.rest-assured>3.2.0</version.io.rest-assured>
         <version.org.apache.commons.lang3>3.8.1</version.org.apache.commons.lang3>
         <version.org.apache.logging.log4j>2.13.3</version.org.apache.logging.log4j>
